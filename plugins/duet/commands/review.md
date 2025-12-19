@@ -132,20 +132,29 @@ $(git diff HEAD)"
 
 ### 8. Create Commit
 
-Generate a descriptive commit message:
+First, check the existing commit style:
 
 ```bash
+git log --oneline -10
+```
+
+- If commits exist: Match the tone and format of existing commits
+- If no commits: Use conventional commit format (feat:, fix:, refactor:, etc.)
+
+Generate a commit message that:
+1. Follows the project's existing commit style
+2. Summarizes the applied changes
+3. Credits the AI review process
+
+Example:
+```bash
 git add -A
-git commit -m "$(cat <<'EOF'
-refactor: apply code review feedback
+git commit -m "refactor: apply code review feedback
 
 - Add null check to process function
 - Use const for immutable variables
 
-Reviewed-by: Gemini AI
-Co-authored-by: Claude <noreply@anthropic.com>
-EOF
-)"
+Reviewed-by: Gemini AI"
 ```
 
 ### 9. Confirm Success
