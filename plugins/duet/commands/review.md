@@ -18,74 +18,104 @@ If no changes exist (no modified or untracked files), inform the user and stop.
 
 ### 2. Stage All Changes
 
-Stage all changes including new files to capture everything:
+Stage all changes including new files, excluding noise files:
 
 ```bash
 git add -A
-git diff --cached
+git diff --cached -- . \
+  ':(exclude)package-lock.json' \
+  ':(exclude)yarn.lock' \
+  ':(exclude)pnpm-lock.yaml' \
+  ':(exclude)*.min.js' \
+  ':(exclude)*.min.css' \
+  ':(exclude)dist/' \
+  ':(exclude)build/' \
+  ':(exclude)*.generated.*'
 ```
 
-This ensures both modified files AND new files are included in the review.
+This ensures meaningful code is reviewed while excluding noise files.
 
 ### 3. Send to Gemini for Review
 
-Call Gemini CLI with the staged diff:
+Call Gemini CLI with the staged diff using a structured prompt:
 
 ```bash
-gemini -p "Please review this git diff. For each issue found, specify:
-- Type: Bug, Improvement, Security, Performance, or Style
-- Description: What the issue is
-- Suggestion: How to fix it
+gemini -p "Role: You are a Senior Principal Software Engineer doing a code review.
 
-Git diff:
-$(git diff --cached)"
+Instructions:
+Perform the review in three distinct phases.
+
+Phase 1: Intent & Risk Analysis
+- Summarize what these changes are trying to achieve
+- Identify the most complex/risky parts of this diff
+- Rate overall risk: Low, Medium, or High
+
+Phase 2: Critical Audit (Priority: High)
+Scan strictly for:
+- Security vulnerabilities (injection, auth bypass, exposed secrets)
+- Logic errors (null pointer, off-by-one, incorrect state handling)
+- Performance regressions (N+1 queries, memory leaks)
+- Breaking changes or side effects
+
+Phase 3: Code Quality (Priority: Low)
+- Naming conventions
+- Code duplication
+- Style improvements
+
+Output Format:
+For each issue, specify:
+- Severity: Critical, Warning, or Nitpick
+- Category: Security, Logic, Performance, or Style
+- File and description
+- Suggested fix with code
+
+Git Diff:
+$(git diff --cached -- . ':(exclude)package-lock.json' ':(exclude)yarn.lock' ':(exclude)pnpm-lock.yaml' ':(exclude)*.min.js' ':(exclude)*.min.css')"
 ```
 
 ### 4. Parse and Present Feedback
 
-Organize Gemini's response into a structured format:
+Organize Gemini's response by priority:
 
 ```markdown
 ## Gemini Review Results
 
-### #1. [Bug] Missing null check
-
-**Gemini says:** The function doesn't handle null input
-
-**Current code:**
-\`\`\`typescript
-function process(data) {
-    return data.value;
-}
-\`\`\`
-
-**Suggested fix:**
-\`\`\`typescript
-function process(data) {
-    if (!data) return null;
-    return data.value;
-}
-\`\`\`
-
-> Assessment: Valid - recommended. This prevents runtime errors.
+**Risk Level:** Medium
+**Summary:** Adding user authentication with JWT tokens
 
 ---
 
-### #2. [Improvement] Use const instead of let
+### Critical Issues
 
-**Gemini says:** Variable is never reassigned
+#### #1. [Security] SQL Injection Risk
+
+**Gemini says:** User input is directly concatenated into query
 
 **Current code:**
-\`\`\`typescript
-let result = calculate();
+\`\`\`javascript
+db.query(`SELECT * FROM users WHERE id = ${userId}`)
 \`\`\`
 
 **Suggested fix:**
-\`\`\`typescript
-const result = calculate();
+\`\`\`javascript
+db.query('SELECT * FROM users WHERE id = ?', [userId])
 \`\`\`
 
-> Assessment: Valid. Minor improvement for code clarity.
+> Assessment: Valid - must fix
+
+---
+
+### Warnings
+
+#### #2. [Logic] Missing null check
+...
+
+---
+
+### Nitpicks
+
+#### #3. [Style] Use const instead of let
+...
 ```
 
 ### 5. Ask User for Selection
@@ -93,10 +123,11 @@ const result = calculate();
 ```markdown
 ## Which items would you like to apply?
 
-| # | Type | Description |
-|---|------|-------------|
-| 1 | Bug | Missing null check |
-| 2 | Improvement | Use const instead of let |
+| # | Severity | Category | Description |
+|---|----------|----------|-------------|
+| 1 | Critical | Security | SQL Injection Risk |
+| 2 | Warning | Logic | Missing null check |
+| 3 | Nitpick | Style | Use const instead of let |
 
 Enter your selection (e.g., "1, 2", "all", or "none"):
 ```
@@ -120,15 +151,7 @@ Changes applied. Would you like to:
 Enter your choice:
 ```
 
-If user wants another review, go back to Step 2 with context:
-```bash
-gemini -p "I've applied these changes based on your previous review:
-- Fixed null check in process()
-- Changed let to const
-
-Please review the updated code for any remaining issues:
-$(git diff HEAD)"
-```
+If user wants another review, go back to Step 3 with context about what was changed.
 
 ### 8. Create Commit
 
@@ -149,9 +172,10 @@ Generate a commit message that:
 Example:
 ```bash
 git add -A
-git commit -m "refactor: apply code review feedback
+git commit -m "fix: address security and code quality issues
 
-- Add null check to process function
+- Fix SQL injection vulnerability in user query
+- Add null check to prevent runtime errors
 - Use const for immutable variables
 
 Reviewed-by: Gemini AI"
@@ -163,8 +187,8 @@ Reviewed-by: Gemini AI"
 ## Commit Created
 
 \`\`\`
-[branch-name abc1234] refactor: apply code review feedback
- 2 files changed, 10 insertions(+), 5 deletions(-)
+[branch-name abc1234] fix: address security and code quality issues
+ 3 files changed, 15 insertions(+), 8 deletions(-)
 \`\`\`
 
 Review cycle complete. Your changes have been committed.

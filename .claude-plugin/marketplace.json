@@ -11,7 +11,7 @@
       "name": "duet",
       "source": "./plugins/duet",
       "description": "Review code with Gemini AI, apply feedback, and commit/PR",
-      "version": "0.1.2",
+      "version": "0.1.3",
       "author": {
         "name": "H. Park"
       }
