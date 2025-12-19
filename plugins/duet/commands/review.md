@@ -35,7 +35,33 @@ git diff --cached -- . \
 
 This ensures meaningful code is reviewed while excluding noise files.
 
-### 3. Send to Gemini for Review
+### 3. Check Diff Size
+
+Check the diff size before sending to Gemini:
+
+```bash
+git diff --cached | wc -l
+```
+
+**Size Limits (due to OS command line restrictions):**
+
+| Lines | Status | Action |
+|-------|--------|--------|
+| < 500 | ✅ OK | Proceed normally |
+| 500-1000 | ⚠️ Warning | Windows users may experience issues |
+| > 1000 | 🔴 Too Large | Recommend splitting or reviewing by file |
+
+If diff is too large, inform the user:
+```markdown
+⚠️ Diff is [X] lines. This may exceed command line limits on some systems.
+
+Options:
+1. Review specific files only: `git diff --cached -- path/to/file.js`
+2. Split changes into smaller commits
+3. Continue anyway (may fail on Windows)
+```
+
+### 4. Send to Gemini for Review
 
 Call Gemini CLI with the staged diff using a structured prompt:
 
@@ -73,7 +99,7 @@ Git Diff:
 $(git diff --cached -- . ':(exclude)package-lock.json' ':(exclude)yarn.lock' ':(exclude)pnpm-lock.yaml' ':(exclude)*.min.js' ':(exclude)*.min.css')"
 ```
 
-### 4. Parse and Present Feedback
+### 5. Parse and Present Feedback
 
 Organize Gemini's response by priority:
 
@@ -118,7 +144,7 @@ db.query('SELECT * FROM users WHERE id = ?', [userId])
 ...
 ```
 
-### 5. Ask User for Selection
+### 6. Ask User for Selection
 
 ```markdown
 ## Which items would you like to apply?
@@ -134,14 +160,14 @@ Enter your selection (e.g., "1, 2", "all", or "none"):
 
 Wait for user input before proceeding.
 
-### 6. Apply Selected Changes
+### 7. Apply Selected Changes
 
 For each selected item:
 1. Read the relevant file
 2. Apply the fix using Edit tool
 3. Confirm the change was made
 
-### 7. Offer Another Review Cycle
+### 8. Offer Another Review Cycle
 
 ```markdown
 Changes applied. Would you like to:
@@ -153,7 +179,7 @@ Enter your choice:
 
 If user wants another review, go back to Step 3 with context about what was changed.
 
-### 8. Create Commit
+### 9. Create Commit
 
 First, check the existing commit style:
 
@@ -181,7 +207,7 @@ git commit -m "fix: address security and code quality issues
 Reviewed-by: Gemini AI"
 ```
 
-### 9. Confirm Success
+### 10. Confirm Success
 
 ```markdown
 ## Commit Created

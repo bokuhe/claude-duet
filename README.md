@@ -86,13 +86,18 @@ git clone https://github.com/bokuhe/claude-duet.git
 
 ## Feedback Format
 
-Review results are presented in a clear table:
+Review results are organized by priority:
 
-| # | Type | Feedback | Assessment |
-|---|------|----------|------------|
-| 1 | Bug | Missing null check | Valid - recommended |
-| 2 | Improvement | Unnecessary async | Valid |
-| 3 | Note | Variable naming | Optional |
+| # | Severity | Category | Description |
+|---|----------|----------|-------------|
+| 1 | Critical | Security | SQL injection vulnerability |
+| 2 | Warning | Logic | Missing null check |
+| 3 | Nitpick | Style | Use const instead of let |
+
+**Gemini reviews in 3 phases:**
+1. **Intent & Risk** - What the changes do, risk level
+2. **Critical Audit** - Security, Logic, Performance issues
+3. **Code Quality** - Style and improvements
 
 You select which items to apply before any changes are made.
 
