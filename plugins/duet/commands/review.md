@@ -12,14 +12,24 @@ Review pending git changes with Gemini AI, apply selected feedback, and create a
 
 ```bash
 git status
-git diff HEAD
 ```
 
-If no changes exist, inform the user and stop.
+If no changes exist (no modified or untracked files), inform the user and stop.
 
-### 2. Send to Gemini for Review
+### 2. Stage All Changes
 
-Call Gemini CLI with the diff:
+Stage all changes including new files to capture everything:
+
+```bash
+git add -A
+git diff --cached
+```
+
+This ensures both modified files AND new files are included in the review.
+
+### 3. Send to Gemini for Review
+
+Call Gemini CLI with the staged diff:
 
 ```bash
 gemini -p "Please review this git diff. For each issue found, specify:
@@ -28,10 +38,10 @@ gemini -p "Please review this git diff. For each issue found, specify:
 - Suggestion: How to fix it
 
 Git diff:
-$(git diff HEAD)"
+$(git diff --cached)"
 ```
 
-### 3. Parse and Present Feedback
+### 4. Parse and Present Feedback
 
 Organize Gemini's response into a structured format:
 
@@ -78,7 +88,7 @@ const result = calculate();
 > Assessment: Valid. Minor improvement for code clarity.
 ```
 
-### 4. Ask User for Selection
+### 5. Ask User for Selection
 
 ```markdown
 ## Which items would you like to apply?
@@ -93,14 +103,14 @@ Enter your selection (e.g., "1, 2", "all", or "none"):
 
 Wait for user input before proceeding.
 
-### 5. Apply Selected Changes
+### 6. Apply Selected Changes
 
 For each selected item:
 1. Read the relevant file
 2. Apply the fix using Edit tool
 3. Confirm the change was made
 
-### 6. Offer Another Review Cycle
+### 7. Offer Another Review Cycle
 
 ```markdown
 Changes applied. Would you like to:
@@ -120,7 +130,7 @@ Please review the updated code for any remaining issues:
 $(git diff HEAD)"
 ```
 
-### 7. Create Commit
+### 8. Create Commit
 
 Generate a descriptive commit message:
 
@@ -138,7 +148,7 @@ EOF
 )"
 ```
 
-### 8. Confirm Success
+### 9. Confirm Success
 
 ```markdown
 ## Commit Created

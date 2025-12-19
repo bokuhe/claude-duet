@@ -8,18 +8,19 @@ Review pending git changes with Gemini AI, apply selected feedback, commit, and 
 
 ## Steps
 
-### 1-7. Review and Commit
+### 1-8. Review and Commit
 
 Follow the same steps as `/duet:review`:
 1. Check for changes
-2. Send to Gemini for review
-3. Parse and present feedback
-4. Ask user for selection
-5. Apply selected changes
-6. Offer another review cycle
-7. Create commit
+2. Stage all changes (including new files)
+3. Send to Gemini for review
+4. Parse and present feedback
+5. Ask user for selection
+6. Apply selected changes
+7. Offer another review cycle
+8. Create commit
 
-### 8. Check Branch Status
+### 9. Check Branch Status
 
 ```bash
 git branch --show-current
@@ -41,7 +42,7 @@ If user chooses option 1:
 git checkout -b feature/code-review-improvements
 ```
 
-### 9. Push to Remote
+### 10. Push to Remote
 
 ```bash
 git push -u origin $(git branch --show-current)
@@ -52,7 +53,7 @@ If push fails due to no upstream:
 git push --set-upstream origin $(git branch --show-current)
 ```
 
-### 10. Create Pull Request
+### 11. Create Pull Request
 
 Use GitHub CLI to create the PR:
 
@@ -86,7 +87,7 @@ EOF
 )"
 ```
 
-### 11. Confirm Success
+### 12. Confirm Success
 
 ```markdown
 ## Pull Request Created
