@@ -1,0 +1,8 @@
+{
+  "name": "duet",
+  "description": "AI code review with Gemini CLI - review, apply feedback, commit, and create PRs",
+  "version": "0.1.0",
+  "author": {
+    "name": "H. Park"
+  }
+}

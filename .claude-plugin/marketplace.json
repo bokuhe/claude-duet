@@ -1,0 +1,20 @@
+{
+  "name": "duet-marketplace",
+  "owner": {
+    "name": "H. Park"
+  },
+  "metadata": {
+    "description": "AI Code Review - Claude Code + Gemini working together like a duet"
+  },
+  "plugins": [
+    {
+      "name": "duet",
+      "source": "./plugins/duet",
+      "description": "Review code with Gemini AI, apply feedback, and commit/PR",
+      "version": "0.1.0",
+      "author": {
+        "name": "H. Park"
+      }
+    }
+  ]
+}
