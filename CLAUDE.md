@@ -204,7 +204,7 @@ Version is tracked in two files (keep in sync):
 - `.claude-plugin/marketplace.json` → `plugins[0].version`
 - `plugins/duet/.claude-plugin/plugin.json` → `version`
 
-Current version: 0.1.4
+Current version: 0.1.5
 
 ## Testing Checklist
 
