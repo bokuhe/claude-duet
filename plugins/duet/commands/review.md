@@ -101,6 +101,8 @@ $(git diff --cached -- . ':(exclude)package-lock.json' ':(exclude)yarn.lock' ':(
 
 ### 5. Parse and Present Feedback
 
+**Important:** Translate Gemini's response into the language you're currently using with the user. If the conversation is in Korean, present the results in Korean. If in Japanese, present in Japanese, etc.
+
 Organize Gemini's response by priority:
 
 ```markdown
