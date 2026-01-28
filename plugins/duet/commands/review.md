@@ -8,6 +8,37 @@ Review pending git changes with Gemini AI, apply selected feedback, and create a
 
 ## Steps
 
+### 0. Load Configuration
+
+Check for `.duetrc.json` in project root:
+
+```bash
+cat .duetrc.json 2>/dev/null || echo '{}'
+```
+
+**Default configuration:**
+```json
+{
+  "exclude": [
+    "package-lock.json",
+    "yarn.lock",
+    "pnpm-lock.yaml",
+    "*.min.js",
+    "*.min.css",
+    "dist/",
+    "build/",
+    "*.generated.*"
+  ],
+  "reviewPrompt": "",
+  "diffLimit": 500
+}
+```
+
+Merge user config with defaults. Use these settings throughout the review:
+- `exclude`: Patterns to exclude from diff (merged with defaults)
+- `reviewPrompt`: Additional instructions appended to Gemini prompt
+- `diffLimit`: Line count threshold for size warnings
+
 ### 1. Check for Changes
 
 ```bash
@@ -18,10 +49,16 @@ If no changes exist (no modified or untracked files), inform the user and stop.
 
 ### 2. Stage All Changes
 
-Stage all changes including new files, excluding noise files:
+Stage all changes including new files, excluding noise files from config:
 
 ```bash
 git add -A
+```
+
+Build exclude arguments dynamically from the configuration's `exclude` array. For each pattern in the exclude list, format as `':(exclude)pattern'` and append to the git diff command:
+
+```bash
+# Example with default excludes:
 git diff --cached -- . \
   ':(exclude)package-lock.json' \
   ':(exclude)yarn.lock' \
@@ -33,7 +70,7 @@ git diff --cached -- . \
   ':(exclude)*.generated.*'
 ```
 
-This ensures meaningful code is reviewed while excluding noise files.
+This ensures meaningful code is reviewed while excluding noise files defined in config.
 
 ### 3. Check Diff Size
 
@@ -43,13 +80,15 @@ Check the diff size before sending to Gemini:
 git diff --cached | wc -l
 ```
 
+Use the `diffLimit` from configuration (default: 500) to determine thresholds:
+
 **Size Limits (due to OS command line restrictions):**
 
 | Lines | Status | Action |
 |-------|--------|--------|
-| < 500 | ✅ OK | Proceed normally |
-| 500-1000 | ⚠️ Warning | Windows users may experience issues |
-| > 1000 | 🔴 Too Large | Recommend splitting or reviewing by file |
+| < diffLimit | ✅ OK | Proceed normally |
+| diffLimit to 2×diffLimit | ⚠️ Warning | Windows users may experience issues |
+| > 2×diffLimit | 🔴 Too Large | Recommend splitting or reviewing by file |
 
 If diff is too large, inform the user:
 ```markdown
@@ -63,7 +102,9 @@ Options:
 
 ### 4. Send to Gemini for Review
 
-Call Gemini CLI with the staged diff using a structured prompt:
+Call Gemini CLI with the staged diff using a structured prompt that requests JSON output.
+
+Build the exclude arguments from config and construct the prompt:
 
 ```bash
 gemini -p "Role: You are a Senior Principal Software Engineer doing a code review.
@@ -88,22 +129,44 @@ Phase 3: Code Quality (Priority: Low)
 - Code duplication
 - Style improvements
 
-Output Format:
-For each issue, specify:
-- Severity: Critical, Warning, or Nitpick
-- Category: Security, Logic, Performance, or Style
-- File and description
-- Suggested fix with code
+[ADDITIONAL_INSTRUCTIONS_FROM_CONFIG]
+
+IMPORTANT: Respond ONLY with valid JSON in this exact format:
+{
+  \"riskLevel\": \"Low|Medium|High\",
+  \"summary\": \"Brief description of what changes achieve\",
+  \"issues\": [
+    {
+      \"id\": 1,
+      \"severity\": \"Critical|Warning|Nitpick\",
+      \"category\": \"Security|Logic|Performance|Style\",
+      \"file\": \"path/to/file.js\",
+      \"line\": 42,
+      \"title\": \"Issue title\",
+      \"description\": \"What is wrong and why\",
+      \"currentCode\": \"the problematic code snippet\",
+      \"suggestedFix\": \"the corrected code snippet\"
+    }
+  ]
+}
+
+If no issues are found, return an empty issues array.
+Do not include any text outside the JSON object.
 
 Git Diff:
-$(git diff --cached -- . ':(exclude)package-lock.json' ':(exclude)yarn.lock' ':(exclude)pnpm-lock.yaml' ':(exclude)*.min.js' ':(exclude)*.min.css')"
+$(git diff --cached -- . [EXCLUDE_ARGS_FROM_CONFIG])"
 ```
+
+Replace `[ADDITIONAL_INSTRUCTIONS_FROM_CONFIG]` with the `reviewPrompt` value from config (if provided).
+Replace `[EXCLUDE_ARGS_FROM_CONFIG]` with the dynamically built exclude patterns.
 
 ### 5. Parse and Present Feedback
 
+Parse the JSON response from Gemini. If the response is not valid JSON, attempt to extract JSON from the response or fall back to treating it as unstructured text.
+
 **Important:** Translate Gemini's response into the language you're currently using with the user. If the conversation is in Korean, present the results in Korean. If in Japanese, present in Japanese, etc.
 
-Organize Gemini's response by priority:
+Organize the parsed JSON response by severity (Critical → Warning → Nitpick):
 
 ```markdown
 ## Gemini Review Results

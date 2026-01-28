@@ -1,8 +1,11 @@
 {
   "name": "duet",
   "description": "AI code review with Gemini CLI - review, apply feedback, commit, and create PRs",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "author": {
     "name": "H. Park"
-  }
+  },
+  "repository": "https://github.com/bokuhe/claude-duet",
+  "license": "MIT",
+  "keywords": ["code-review", "gemini", "ai", "git", "pr"]
 }

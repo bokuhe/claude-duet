@@ -24,24 +24,52 @@ Follow the same steps as `/duet:review`:
 
 ### 11. Check Branch Status
 
+First, detect the default branch automatically:
+
 ```bash
-git branch --show-current
-git log origin/main..HEAD --oneline
+# Detect default branch (try multiple methods)
+DEFAULT_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@')
+if [ -z "$DEFAULT_BRANCH" ]; then
+  DEFAULT_BRANCH=$(git remote show origin 2>/dev/null | grep 'HEAD branch' | cut -d: -f2 | tr -d ' ')
+fi
+if [ -z "$DEFAULT_BRANCH" ]; then
+  DEFAULT_BRANCH="main"
+fi
+echo "Default branch: $DEFAULT_BRANCH"
 ```
 
-Ensure we're not on main/master branch. If we are:
+Then check current branch status:
+
+```bash
+git branch --show-current
+git log origin/$DEFAULT_BRANCH..HEAD --oneline
+```
+
+Ensure we're not on the default branch (main/master/develop). If we are:
 
 ```markdown
-You're on the main branch. Would you like me to:
+You're on the default branch ($DEFAULT_BRANCH). Would you like me to:
 1. Create a new branch for this PR
 2. Cancel the PR creation
 
 Enter your choice:
 ```
 
-If user chooses option 1:
+If user chooses option 1, generate a branch name from the commit message:
+- Extract key words from the commit subject
+- Determine prefix from commit type (feat → feature/, fix → fix/, refactor → refactor/, etc.)
+- Format: `prefix/keyword-keyword` (lowercase, hyphenated)
+
+```markdown
+Suggested branch name: `fix/sql-injection-null-check`
+
+Enter branch name (or press Enter to accept):
+```
+
+Wait for user confirmation, then create the branch:
+
 ```bash
-git checkout -b feature/code-review-improvements
+git checkout -b <branch-name>
 ```
 
 ### 12. Push to Remote

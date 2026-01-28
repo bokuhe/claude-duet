@@ -58,6 +58,40 @@ claude-duet/
 13. Create PR using `gh pr create`
 14. Display PR URL and summary
 
+## Configuration
+
+Create `.duetrc.json` in your project root to customize behavior:
+
+```json
+{
+  "exclude": ["custom-file.js", "legacy/**"],
+  "reviewPrompt": "Focus on security issues. Ignore style nitpicks.",
+  "diffLimit": 1000
+}
+```
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `exclude` | string[] | (see below) | Files/patterns to exclude from review |
+| `reviewPrompt` | string | `""` | Additional instructions appended to Gemini prompt |
+| `diffLimit` | number | `500` | Line count threshold for size warnings |
+
+**Default exclude patterns:**
+```json
+[
+  "package-lock.json",
+  "yarn.lock",
+  "pnpm-lock.yaml",
+  "*.min.js",
+  "*.min.css",
+  "dist/",
+  "build/",
+  "*.generated.*"
+]
+```
+
+User-specified excludes are merged with defaults, not replaced.
+
 ## Development Guidelines
 
 ### Command File Format
@@ -204,7 +238,7 @@ Version is tracked in two files (keep in sync):
 - `.claude-plugin/marketplace.json` → `plugins[0].version`
 - `plugins/duet/.claude-plugin/plugin.json` → `version`
 
-Current version: 0.1.5
+Current version: 0.1.6
 
 ## Testing Checklist
 
