@@ -19,14 +19,15 @@ claude-duet/
 ├── plugins/
 │   └── duet/
 │       ├── .claude-plugin/
-│       │   └── plugin.json   # Plugin metadata (name: duet, version: 0.1.x)
+│       │   └── plugin.json   # Plugin metadata (name, version, repository, license, keywords)
 │       └── commands/
 │           ├── review.md     # /duet:review - Review + Commit workflow
 │           └── pr.md         # /duet:pr - Review + Commit + PR workflow
 ├── CLAUDE.md                 # This file
 ├── README.md                 # User-facing documentation
 ├── LICENSE                   # MIT License
-└── .gitignore
+├── .gitignore
+└── .duetrc.json              # (User project) Optional configuration file
 ```
 
 ## Commands
@@ -36,11 +37,12 @@ claude-duet/
 **Purpose:** Code review workflow ending with a commit
 
 **Flow:**
+0. Load configuration from `.duetrc.json` (merge with defaults)
 1. Check for uncommitted changes (`git status`)
 2. Stage all changes excluding noise files (`git add -A`)
-3. Check diff size (warn if >500 lines for Windows compatibility)
-4. Send staged diff to Gemini CLI for 3-phase review
-5. Parse and present feedback (translated to user's conversation language)
+3. Check diff size (warn if >diffLimit lines for Windows compatibility)
+4. Send staged diff to Gemini CLI for 3-phase review (request JSON output)
+5. Parse JSON response and present feedback (translated to user's conversation language)
 6. User selects which suggestions to apply
 7. Apply selected fixes using Edit tool
 8. Offer another review cycle if changes were made
@@ -52,8 +54,11 @@ claude-duet/
 **Purpose:** Full workflow from review to PR creation
 
 **Flow:**
-1-10. Same as `/duet:review`
-11. Check branch status (prevent commits to main/master)
+0-10. Same as `/duet:review`
+11. Check branch status with automatic default branch detection
+    - Detect default branch from remote (main/master/develop)
+    - If on default branch, offer to create new branch
+    - Generate branch name dynamically from commit message (e.g., `fix/sql-injection-null-check`)
 12. Push to remote with upstream tracking
 13. Create PR using `gh pr create`
 14. Display PR URL and summary
@@ -159,6 +164,28 @@ The plugin uses Gemini CLI (`gemini -p "prompt"`) for code review.
 2. **Phase 2: Critical Audit** - Security, Logic, Performance issues
 3. **Phase 3: Code Quality** - Style, naming, duplication
 
+**JSON Output Format:**
+Gemini is instructed to respond with structured JSON for reliable parsing:
+```json
+{
+  "riskLevel": "Low|Medium|High",
+  "summary": "Brief description of changes",
+  "issues": [
+    {
+      "id": 1,
+      "severity": "Critical|Warning|Nitpick",
+      "category": "Security|Logic|Performance|Style",
+      "file": "path/to/file.js",
+      "line": 42,
+      "title": "Issue title",
+      "description": "What is wrong and why",
+      "currentCode": "problematic code",
+      "suggestedFix": "corrected code"
+    }
+  ]
+}
+```
+
 **Severity Levels:**
 - Critical: Must fix (security vulnerabilities, logic errors)
 - Warning: Should fix (performance issues, missing checks)
@@ -240,6 +267,19 @@ Version is tracked in two files (keep in sync):
 
 Current version: 0.1.6
 
+**Plugin Metadata (plugin.json):**
+```json
+{
+  "name": "duet",
+  "description": "AI code review with Gemini CLI...",
+  "version": "0.1.6",
+  "author": { "name": "H. Park" },
+  "repository": "https://github.com/bokuhe/claude-duet",
+  "license": "MIT",
+  "keywords": ["code-review", "gemini", "ai", "git", "pr"]
+}
+```
+
 ## Testing Checklist
 
 Before releasing:
@@ -247,9 +287,12 @@ Before releasing:
 - [ ] Run `/duet:review` with medium diff (100-500 lines)
 - [ ] Test with no changes (should exit gracefully)
 - [ ] Test Gemini CLI error handling
+- [ ] Test with `.duetrc.json` custom configuration
+- [ ] Verify JSON parsing from Gemini response
 - [ ] Run `/duet:pr` full workflow
 - [ ] Test on non-main branch
-- [ ] Test branch creation from main
+- [ ] Test branch creation from main (with dynamic branch naming)
+- [ ] Test automatic default branch detection
 - [ ] Verify commit message matches project style
 
 ## Common Issues
